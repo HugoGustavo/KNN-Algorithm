@@ -58,7 +58,8 @@ def classify(query, k=3, filename='database.csv', weighted=False):
 
 def main():
     query = [6.0, 3.4, 4.5, 1.6]
-    print(classify(query, k=3, filename='iris.csv'))
+    print('Query: ' + str(query))
+    print('Class: ' + classify(query, k=3, filename='iris.csv'))
 
 if __name__ == "__main__":
     main()
