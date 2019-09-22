@@ -1,8 +1,9 @@
 import csv
+import sys
 import math
 import operator
 
-## Carrega os exemplos de treinamento da forma (atrioutos_nao_alvo, atributo_alvo)
+## Carrega os exemplos de treinamento da forma (atributos_nao_alvo, atributo_alvo)
 def loadDataset(filename):
     dataMatrix = []
     dataLabels = []
@@ -16,6 +17,18 @@ def loadDataset(filename):
             dataLabels.append(float(row[len(row)-1]))
     return (dataMatrix, dataLabels)
 
+## Carrega os exemplos a serem classificados
+def loadQueries(filename):
+    dataMatrix = []
+    with open(filename) as file:
+        rows = csv.reader(file, delimiter=',')
+        for row in rows:
+            vector = []
+            for i in range(0, len(row)):
+                vector.append(float(row[i]))
+            dataMatrix.append(vector)
+    return dataMatrix
+
 ## Calcula a distancia euclidiana entre dois exemplos
 def euclideanDistance(sampleX, sampleY):
     euclideanDistance = 0.0
@@ -24,20 +37,12 @@ def euclideanDistance(sampleX, sampleY):
     euclideanDistance = math.sqrt(euclideanDistance)
     return euclideanDistance
 
-## Query => Entrada a ser classificada
-## K => Quantidade de grupos
-## Filename => Nome da base de dados que contem os exemplos (Formato csv)
-## Weighted => Knn é ponderado ou não (Por padrão não)
-def classify(query, k=3, filename='database.csv', weighted=False):
+def knn(k, dataMatrix, dataLabels, query):
     nearestNeighbor = []
-    (dataMatrix, dataLabels) = loadDataset(filename)
 
     ## Calcula os K vizinhos mais proximos
     for i in range(len(dataMatrix)):
         distance = euclideanDistance(query, dataMatrix[i])
-        
-        if weighted and distance != 0.0:
-            distance = 1 / math.pow(distance, 2)
 
         if len(nearestNeighbor) > k:
             for j in range(len(nearestNeighbor)):
@@ -47,19 +52,25 @@ def classify(query, k=3, filename='database.csv', weighted=False):
         else:
             nearestNeighbor.append((i, distance))
     
-    ## Calcula a ocorrencia de cada um dos valores do atributo alvo nos k vizinhos mais proximos
-    occurrences = dict()
+    ## Calcula a media dos valores do atributo alvo nos k vizinhos mais proximos
+    sum = 0.0
     for (i, _ )  in nearestNeighbor:
-        label = str(dataLabels[i])
-        occurrences[label] = occurrences.get(label, 0) + 1
+        sum = sum + float(dataLabels[i])
+    target = sum / float(k)
+    
+    return target
 
-    ## Seleciona o valor com maior ocorrencia 
-    return max(occurrences.items(), key=operator.itemgetter(1))[0]
+def classify(k=3):
+    (dataMatrix, dataLabels) = loadDataset('parkinsons_updrs.csv')
+    queries = loadQueries('queries.csv')
+
+    for query in queries:
+        target = knn(k, dataMatrix, dataLabels, query)
+        print(str(query) + ' => ' + str(target))
 
 def main():
-    query = [6.0, 3.4, 4.5, 1.6]
-    print('Query: ' + str(query))
-    print('Class: ' + classify(query, k=3, filename='iris.csv'))
+    k = int(sys.argv[1])
+    classify(k)
 
 if __name__ == "__main__":
     main()
